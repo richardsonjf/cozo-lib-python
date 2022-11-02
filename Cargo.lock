@@ -335,9 +335,9 @@ checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
 name = "cozo"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "852744711fb457c9b2b2d1d14a3a586f5a6167b32543a0aee5b064965d8adb3a"
+checksum = "5a1a58fc75ad85378139f0217ad321820af9443fa5fe5f963e9051f84a930e99"
 dependencies = [
  "approx",
  "base64",
