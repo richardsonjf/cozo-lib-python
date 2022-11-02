@@ -3,9 +3,10 @@ requires = ["maturin>=0.13,<0.14"]
 build-backend = "maturin"
 
 [project]
-name = "python"
+name = "cozo-lib-python"
 requires-python = ">=3.7"
 classifiers = [
+    "Topic :: Database",
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
