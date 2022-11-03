@@ -4,15 +4,15 @@
 
 use std::collections::BTreeMap;
 
+use cozo::Db;
 use miette::miette;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 
-use cozo::Db;
-
 trait PyResultExt<T> {
     fn into_py_res(self) -> PyResult<T>;
 }
+
 impl<T> PyResultExt<T> for miette::Result<T> {
     fn into_py_res(self) -> PyResult<T> {
         match self {
@@ -21,10 +21,12 @@ impl<T> PyResultExt<T> for miette::Result<T> {
         }
     }
 }
+
 #[pyclass]
 struct CozoDbPy {
     db: Db,
 }
+
 #[pymethods]
 impl CozoDbPy {
     #[new]
@@ -45,8 +47,9 @@ impl CozoDbPy {
         Ok(ret.to_string())
     }
 }
+
 #[pymodule]
-fn cozo_py_module(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn cozo_embedded(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<CozoDbPy>()?;
     Ok(())
 }
