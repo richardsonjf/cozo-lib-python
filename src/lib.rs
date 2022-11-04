@@ -8,6 +8,7 @@ use cozo::Db;
 use miette::miette;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
+use pyo3::wrap_pyfunction;
 
 trait PyResultExt<T> {
     fn into_py_res(self) -> PyResult<T>;
@@ -48,8 +49,20 @@ impl CozoDbPy {
     }
 }
 
+#[pyfunction]
+fn force_color_display() -> bool {
+    miette::set_hook(Box::new(|_| {
+        Box::new(
+            miette::MietteHandlerOpts::default()
+                .color(true)
+                .build(),
+        )
+    })).is_ok()
+}
+
 #[pymodule]
 fn cozo_embedded(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(force_color_display, m)?)?;
     m.add_class::<CozoDbPy>()?;
     Ok(())
 }
