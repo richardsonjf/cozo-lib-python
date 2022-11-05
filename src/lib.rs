@@ -2,67 +2,38 @@
  * Copyright 2022, The Cozo Project Authors. Licensed under MIT/Apache-2.0/BSD-3-Clause.
  */
 
-use std::collections::BTreeMap;
-
 use cozo::Db;
-use miette::miette;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-
-trait PyResultExt<T> {
-    fn into_py_res(self) -> PyResult<T>;
-}
-
-impl<T> PyResultExt<T> for miette::Result<T> {
-    fn into_py_res(self) -> PyResult<T> {
-        match self {
-            Ok(t) => Ok(t),
-            Err(e) => Err(PyException::new_err(format!("{:?}", e))),
-        }
-    }
-}
 
 #[pyclass]
 struct CozoDbPy {
-    db: Db,
+    db: Option<Db>,
 }
 
 #[pymethods]
 impl CozoDbPy {
     #[new]
-    #[args(create_if_missing = true, destroy_on_exit = false)]
     fn new(path: &str) -> PyResult<Self> {
-        let db = Db::new(path).into_py_res()?;
-        Ok(Self { db })
+        match Db::new(path) {
+            Ok(db) => Ok(Self { db: Some(db) }),
+            Err(err) => Err(PyException::new_err(format!("{:?}", err)))
+        }
     }
-    pub fn run_query(&self, py: Python<'_>, query: &str, params: &str) -> PyResult<String> {
-        let params_map: serde_json::Value = serde_json::from_str(params)
-            .map_err(|_| miette!("the given params argument is not valid JSON"))
-            .into_py_res()?;
-        let params_arg: BTreeMap<_, _> = match params_map {
-            serde_json::Value::Object(m) => m.into_iter().collect(),
-            _ => Err(miette!("the given params argument is not a JSON map")).into_py_res()?,
-        };
-        let ret = py.allow_threads(|| self.db.run_script(query, &params_arg).into_py_res())?;
-        Ok(ret.to_string())
+    pub fn run_query(&self, py: Python<'_>, query: &str, params: &str) -> String {
+        if let Some(db) = &self.db {
+            py.allow_threads(|| db.run_script_str(query, params))
+        } else {
+            r##"{"ok":false,"message":"database closed"}"##.to_string()
+        }
     }
-}
-
-#[pyfunction]
-fn force_color_display() -> bool {
-    miette::set_hook(Box::new(|_| {
-        Box::new(
-            miette::MietteHandlerOpts::default()
-                .color(true)
-                .build(),
-        )
-    })).is_ok()
+    pub fn close(&mut self) -> bool {
+        self.db.take().is_some()
+    }
 }
 
 #[pymodule]
 fn cozo_embedded(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(force_color_display, m)?)?;
     m.add_class::<CozoDbPy>()?;
     Ok(())
 }
